@@ -17,12 +17,14 @@ cyan: str = "\033[36m"
 white: str = "\033[37m"
 
 
+# print colorized
 def cprint(value: str = "", color: str = "") -> None:
 	prefix: str = bold + color
 	print(f"{prefix}{value}{reset}")
 
 
-def build(pkg: str):
+# dirty little helper function
+def build(pkg: str) -> bool:
 	cprint(cyan + "Building " + green + pkg)
 	return subprocess.run("makepkg", cwd=pkg, check=False).returncode == 0
 
