@@ -24,38 +24,41 @@ class colors:
 
 # make list of subdirs
 print(colors.bold + colors.cyan + "Listing packages!" + colors.default)
-packages: list[str] = []
+returncode_per_package: dict[str, int] = {}
 for file in os.listdir():
 	if os.path.isdir(file) and os.path.isfile(os.path.join(file, "PKGBUILD")):
-		packages.append(file)
+		returncode_per_package[file] = 0
 
 # pulliung changes
-for package in packages:
+for package in returncode_per_package:
 	print(colors.bold + colors.cyan + "Pulling " + colors.green + package + colors.default)
 	_ = subprocess.run(["git", "pull"], cwd=package, check=False)
 
 print(colors.bold + colors.cyan + "Pulled all packages, building packages!" + colors.default)
 
 # build packages
-# are the packages[] and installables[] lists even needed?
-returncode_per_package: dict[str, int] = {}
-for package in packages:
+for package in returncode_per_package:
 	print(colors.bold + colors.cyan + "Building " + colors.green + package + colors.default)
-
 	returncode_per_package[package] = subprocess.run("makepkg", cwd=package, check=False).returncode
 
-# remove failed packages from list
+# remove failed packages from dict
+num_items: int = 0
+to_remove: list[str] = []
 for package, returncode in returncode_per_package.items():
-	if returncode != 0:
-		packages.remove(package)
+	if returncode == 0:
+		num_items += 1
+	else:
+		to_remove.append(package)
+for package in to_remove:
+	_ = returncode_per_package.pop(package)
 
 # exit if nothing to do from here
-if not len(packages):
+if num_items == 0:
 	exit(0)
 
 # getting tarball locations
 installables: list[str] = []
-for package in packages:
+for package in returncode_per_package:
 	installables.extend(
 		subprocess.check_output(["makepkg", "--packagelist"], cwd=package)
 		.decode()
