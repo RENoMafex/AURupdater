@@ -44,6 +44,7 @@ print(
 )
 
 # build packages
+returncode_by_package: dict[str, int] = {}  # is the packages[] list even needed?
 for package in packages:
     print(
         colors.bold
@@ -53,7 +54,19 @@ for package in packages:
         + package
         + colors.default
     )
-    _ = subprocess.run("makepkg", cwd=package, check=False)
+
+    returncode_by_package[package] = subprocess.run(
+        "makepkg", cwd=package, check=False
+    ).returncode
+
+# remove failed packages from list
+for package, returncode in returncode_by_package.items():
+    if returncode != 0:
+        packages.remove(package)
+
+# exit if nothing to do from here
+if not len(packages):
+    exit(0)
 
 # getting tarball locations
 installables: list[str] = []
@@ -64,7 +77,6 @@ for package in packages:
         .strip()
         .splitlines()
     )
-
 
 # check if tarballs actually exist
 installables = [p for p in installables if os.path.exists(p)]
