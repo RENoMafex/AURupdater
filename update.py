@@ -44,7 +44,8 @@ print(
 )
 
 # build packages
-returncode_by_package: dict[str, int] = {}  # is the packages[] list even needed?
+# are the packages[] and installables[] lists even needed?
+returncode_by_package: dict[str, int] = {}
 for package in packages:
     print(
         colors.bold
