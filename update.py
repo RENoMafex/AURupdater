@@ -22,49 +22,50 @@ def cprint(value: str = "", color: str = "") -> None:
 	print(f"{prefix}{value}{reset}")
 
 
+def build(pkg: str):
+	cprint(cyan + "Building " + green + pkg)
+	return subprocess.run("makepkg", cwd=pkg, check=False).returncode == 0
+
+
 # make list of subdirs
-cprint("Listing packages!", cyan)
-returncode_per_package: dict[str, int] = {}
+cprint("-------------------------------------", green)
+cprint("Listing packages and pulling changes!", green)
+cprint("-------------------------------------", green)
+packages: set[str] = set()
 for file in os.listdir():
 	if os.path.isdir(file) and os.path.isfile(os.path.join(file, "PKGBUILD")):
-		returncode_per_package[file] = 0
+		packages.add(file)
 
 # pulliung changes
-for package in returncode_per_package:
-	cprint(cyan + "Pulling " + green + package)
-	_ = subprocess.run(["git", "pull"], cwd=package, check=False)
-
-cprint(cyan + "Pulled all packages, building packages!")
+for pkg in packages:
+	cprint(cyan + "Pulling " + green + pkg)
+	_ = subprocess.run(["git", "pull"], cwd=pkg, check=False)
+cprint("---------------------------------------", green)
+cprint("Pulled all packages, building packages!", green)
+cprint("---------------------------------------", green)
 
 # build packages
-for package in returncode_per_package:
-	cprint(cyan + "Building " + green + package)
-	returncode_per_package[package] = subprocess.run("makepkg", cwd=package, check=False).returncode
-
-# remove failed packages from dict
-num_items: int = 0
-to_remove: list[str] = []
-for package, returncode in returncode_per_package.items():
-	if returncode == 0:
-		num_items += 1
-	else:
-		to_remove.append(package)
-for package in to_remove:
-	_ = returncode_per_package.pop(package)
+packages = {pkg for pkg in packages if build(pkg)}
 
 # exit if nothing to do from here
-if num_items == 0:
+if len(packages) == 0:
+	cprint("--------------------------------", red)
+	cprint("No Packages to install, exiting!", red)
+	cprint("--------------------------------", red)
 	exit(0)
 
 # getting tarball locations
 installables: list[str] = []
-for package in returncode_per_package:
+for pkg in packages:
 	installables.extend(
-		subprocess.check_output(["makepkg", "--packagelist"], cwd=package).decode().strip().splitlines()
+		subprocess.run(["makepkg", "--packagelist"], cwd=pkg, check=False, capture_output=True)
+		.stdout.decode()
+		.strip()
+		.splitlines()
 	)
 
 # check if tarballs actually exist
-installables = [p for p in installables if os.path.exists(p)]
+installables = [pkg for pkg in installables if os.path.exists(pkg)]
 
 # install packages from existing tarballs
 _ = subprocess.run(["sudo", "pacman", "-U", *installables], check=False)
