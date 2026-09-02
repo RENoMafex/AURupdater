@@ -23,6 +23,13 @@ def cprint(value: str = "", color: str = "") -> None:
 	print(f"{prefix}{value}{reset}")
 
 
+# print a block
+def bprint(value: str = "", color: str = "") -> None:
+	cprint(len(value) * "-", color)
+	cprint(value, color)
+	cprint(len(value) * "-", color)
+
+
 # dirty little helper function
 def build(pkg: str) -> bool:
 	cprint(cyan + "Building " + green + pkg)
@@ -30,9 +37,7 @@ def build(pkg: str) -> bool:
 
 
 # make list of subdirs
-cprint("-------------------------------------", green)
-cprint("Listing packages and pulling changes!", green)
-cprint("-------------------------------------", green)
+bprint("Listing packages and pulling changes!", green)
 packages: set[str] = set()
 for file in os.listdir():
 	if os.path.isdir(file) and os.path.isfile(os.path.join(file, "PKGBUILD")):
@@ -42,18 +47,15 @@ for file in os.listdir():
 for pkg in packages:
 	cprint(cyan + "Pulling " + green + pkg)
 	_ = subprocess.run(["git", "pull"], cwd=pkg, check=False)
-cprint("---------------------------------------", green)
-cprint("Pulled all packages, building packages!", green)
-cprint("---------------------------------------", green)
+bprint("Pulled all packages, building packages!", green)
+
 
 # build packages
 packages = {pkg for pkg in packages if build(pkg)}
 
 # exit if nothing to do from here
 if len(packages) == 0:
-	cprint("--------------------------------", red)
-	cprint("No Packages to install, exiting!", red)
-	cprint("--------------------------------", red)
+	bprint("No Packages to install, exiting!", red)
 	exit(0)
 
 # getting tarball locations
