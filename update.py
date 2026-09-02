@@ -4,23 +4,23 @@ import os
 import subprocess
 from sys import exit
 
-reset: str = "\033[0m"
-bold: str = "\033[1m"
+RESET: str = "\033[0m"
+BOLD: str = "\033[1m"
 
-black: str = "\033[30m"
-red: str = "\033[31m"
-green: str = "\033[32m"
-yellow: str = "\033[33m"
-blue: str = "\033[34m"
-magenta: str = "\033[35m"
-cyan: str = "\033[36m"
-white: str = "\033[37m"
+BLACK: str = "\033[30m"
+RED: str = "\033[31m"
+GREEN: str = "\033[32m"
+YELLOW: str = "\033[33m"
+BLUE: str = "\033[34m"
+MAGENTA: str = "\033[35m"
+CYAN: str = "\033[36m"
+WHITE: str = "\033[37m"
 
 
 # print colorized
 def cprint(value: str = "", color: str = "") -> None:
-	prefix: str = bold + color
-	print(f"{prefix}{value}{reset}")
+	prefix: str = BOLD + color
+	print(f"{prefix}{value}{RESET}")
 
 
 # print a block
@@ -32,12 +32,12 @@ def bprint(value: str = "", color: str = "") -> None:
 
 # dirty little helper function
 def build(pkg: str) -> bool:
-	cprint(cyan + "Building " + green + pkg)
+	cprint(CYAN + "Building " + GREEN + pkg)
 	return subprocess.run("makepkg", cwd=pkg, check=False).returncode == 0
 
 
 # make list of subdirs
-bprint("Listing packages and pulling changes!", green)
+bprint("Listing packages and pulling changes!", GREEN)
 packages: set[str] = set()
 for file in os.listdir():
 	if os.path.isdir(file) and os.path.isfile(os.path.join(file, "PKGBUILD")):
@@ -45,9 +45,9 @@ for file in os.listdir():
 
 # pulliung changes
 for pkg in packages:
-	cprint(cyan + "Pulling " + green + pkg)
+	cprint(CYAN + "Pulling " + GREEN + pkg)
 	_ = subprocess.run(["git", "pull"], cwd=pkg, check=False)
-bprint("Pulled all packages, building packages!", green)
+bprint("Pulled all packages, building packages!", GREEN)
 
 
 # build packages
@@ -55,7 +55,7 @@ packages = {pkg for pkg in packages if build(pkg)}
 
 # exit if nothing to do from here
 if len(packages) == 0:
-	bprint("No Packages to install, exiting!", red)
+	bprint("No Packages to install, exiting!", RED)
 	exit(0)
 
 # getting tarball locations
