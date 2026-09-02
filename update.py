@@ -36,18 +36,38 @@ def build(pkg: str) -> bool:
 	return subprocess.run("makepkg", cwd=pkg, check=False).returncode == 0
 
 
+def pull(pkg: str) -> bool:
+	commit_hash: str = (
+		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, capture_output=True)
+		.stdout.decode(errors="ignore")
+		.splitlines()
+		.pop()
+	)
+	_ = subprocess.run(["git", "pull"], cwd=pkg, check=False)
+	return (
+		commit_hash
+		!= subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, capture_output=True)
+		.stdout.decode(errors="ignore")
+		.splitlines()
+		.pop()
+	)
+
+
 # make list of subdirs
-bprint("Listing packages and pulling changes!", GREEN)
+bprint("Listing packages!", GREEN)
 packages: set[str] = set()
 for file in os.listdir():
 	if os.path.isdir(file) and os.path.isfile(os.path.join(file, "PKGBUILD")):
 		packages.add(file)
 
+bprint(f"Found {len(packages)} Packages! Pulling changes!", GREEN)
+
 # pulliung changes
+num_pulled: int = 0
 for pkg in packages:
 	cprint(CYAN + "Pulling " + GREEN + pkg)
-	_ = subprocess.run(["git", "pull"], cwd=pkg, check=False)
-bprint("Pulled all packages, building packages!", GREEN)
+	num_pulled += pull(pkg)
+bprint(f"Pulled {num_pulled} packages, {len(packages) - num_pulled} were up-to-date! building packages!", GREEN)
 
 
 # build packages
@@ -72,6 +92,9 @@ for pkg in packages:
 installables = [pkg for pkg in installables if os.path.exists(pkg)]
 
 # install packages from existing tarballs
-_ = subprocess.run(["sudo", "pacman", "-U", *installables], check=False)
+if not subprocess.run(["sudo", "pacman", "-U", *installables], check=False).returncode:
+	bprint(f"Installed {len(installables)} packages!", GREEN)
+else:
+	bprint("An Error occured. Check output for Infos.", RED)
 
 exit(0)
