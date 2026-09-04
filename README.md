@@ -59,7 +59,3 @@ You can run the script by invoking `./update.py` inside the AUR directory. It wo
 ## Acknowledgments
 
 Special thanks to Jan, who would rather like to stay anonymous, for proofreading this script since i have no idea how to code in python.
-
-## TODO
-
-Implement cleanup before rebuild using `paccache -c directory -rvk1`
