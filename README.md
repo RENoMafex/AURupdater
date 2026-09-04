@@ -25,7 +25,7 @@ Just drop the `update.py` script into your top level AUR directory.
 
 Given the following example directory:
 
-```sh
+```bash
 user@machine:~$ tree -L2 AUR
 AUR
 ├── NotAPackage
