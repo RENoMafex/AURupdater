@@ -51,7 +51,7 @@ AUR
 
 user@machine:~$ cd AUR
 user@machine:~/AUR$ ./update.py
-# output of updatescript here
+# output of update.py here
 ```
 
 You can run the script by invoking `./update.py` inside the AUR directory. It would update `package1`, `package2` and `package3` but not `NotAPackage`, because it has no `PKGBUILD` inside it.
