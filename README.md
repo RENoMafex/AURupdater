@@ -8,16 +8,27 @@
 Updates all your AUR packages, removes old tarballs and installs everything. Just drop the script into your AUR directory and run it.
 </details>
 
+## Prerequisites
+
+This script runs only under Linux distros, which use `pacman` (like Arch, CachyOS, EndeavourOS, Manjaro or SteamOS)
+To run this script you will need the following tools: git, pacman, paccache, makepkg and python, you can simply install them by `sudo pacman -S pacman python git pacman-contrib`
+
+## About
+
 If you have an AUR directory like me, you can simply use this script to update all your AUR packages in an easy way. All this script does is to check all direct subdirs for an `PKGBUILD` file. In every direct subdir where that file could be found updates will be pulled through `git`, after that the packages which need to be rebuilt are built using `makepkg`. After that all the packages get installed through `sudo pacman -U`.
 
-## Example of how to use this script
+## Installation
+
+Just drop the `update.py` script into your top level AUR directory.
+
+## Usage
 
 Given the following example directory:
 
-```
+```sh
 user@machine:~$ tree -L2 AUR
 AUR
-├── NotAPackage1
+├── NotAPackage
 │   ├── somefile
 │   └── someotherfile
 ├── package1
@@ -36,21 +47,14 @@ AUR
 ├── package3
 │   ├── PKGBUILD
 │   └── .SRCINFO
-├── package4
-│   ├── PKGBUILD
-│   ├── .SRCINFO
-│   └── LICENSE
-├── package5
-│   ├── PKGBUILD
-│   └── .SRCINFO
-├── package6
-│   ├── PKGBUILD
-│   └── .SRCINFO
 └── update.py
 
+user@machine:~$ cd AUR
+user@machine:~/AUR$ ./update.py
+# output of updatescript here
 ```
 
-You could now run the script by invoking `./update.py` inside the AUR directory.
+You can run the script by invoking `./update.py` inside the AUR directory. It would update `package1`, `package2` and `package3` but not `NotAPackage`, because it has no `PKGBUILD` inside it.
 
 ## Acknowledgments
 
