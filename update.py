@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+from subprocess import PIPE
 from sys import exit
 
 RESET: str = "\033[0m"
@@ -38,16 +39,16 @@ def build(pkg: str) -> bool:
 
 def pull(pkg: str) -> bool:
 	commit_hash: str = (
-		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, capture_output=True)
-		.stdout.decode(errors="ignore")
+		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=PIPE)
+		.stdout.decode()
 		.splitlines()
 		.pop()
 	)
 	_ = subprocess.run(["git", "pull"], cwd=pkg, check=False)
 	return (
 		commit_hash
-		!= subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, capture_output=True)
-		.stdout.decode(errors="ignore")
+		!= subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=PIPE)
+		.stdout.decode()
 		.splitlines()
 		.pop()
 	)
@@ -64,10 +65,13 @@ bprint(f"Found {len(packages)} Packages! Pulling changes!", GREEN)
 
 # pulliung changes
 num_pulled: int = 0
+num_uptodate: int = 0
 for pkg in packages:
 	cprint(CYAN + "Pulling " + GREEN + pkg)
-	num_pulled += pull(pkg)
-bprint(f"Pulled {num_pulled} packages, {len(packages) - num_pulled} were up-to-date! building packages!", GREEN)
+	pullresult: bool = pull(pkg)
+	num_pulled += pullresult
+	num_uptodate += not pullresult
+bprint(f"Pulled {num_pulled} packages, {num_uptodate} were already up-to-date! building packages!", GREEN)
 
 
 # build packages
@@ -82,7 +86,7 @@ if len(packages) == 0:
 installables: list[str] = []
 for pkg in packages:
 	installables.extend(
-		subprocess.run(["makepkg", "--packagelist"], cwd=pkg, check=False, capture_output=True)
+		subprocess.run(["makepkg", "--packagelist"], cwd=pkg, check=False, stdout=PIPE)
 		.stdout.decode()
 		.strip()
 		.splitlines()
