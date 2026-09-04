@@ -81,7 +81,11 @@ for file in os.listdir():
 	if os.path.isdir(file) and os.path.isfile(os.path.join(file, "PKGBUILD")):
 		packages.add(file)
 
-bprint(f"Found {len(packages)} Packages! Pulling changes!", GREEN)
+if len(packages):
+	bprint(f"Found {len(packages)} Packages! Pulling changes!", GREEN)
+else:
+	bprint("No Packages found, exiting!", RED)
+	exit(0)
 
 # pulliung changes
 num_pulled: int = 0
