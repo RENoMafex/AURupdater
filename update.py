@@ -31,13 +31,33 @@ def bprint(value: str = "", color: str = "") -> None:
 	cprint(len(value) * "-", color)
 
 
-# dirty little helper function
+# dirty little helper functions
+
+
 def build(pkg: str) -> bool:
+	"""
+	Invokes "makepkg" to build the Package!
+
+	Args:
+		pkg (str): Local directory of the Package
+
+	Returns:
+		bool: True if makepkg didnt have any errors and build the package successfully.
+	"""
 	cprint(CYAN + "Building " + GREEN + pkg)
 	return subprocess.run("makepkg", cwd=pkg, check=False).returncode == 0
 
 
 def pull(pkg: str) -> bool:
+	"""
+	git-pull a repo.
+
+	Args:
+		pkg (str): Local directory of repo.
+
+	Returns:
+		bool: True if there were changes.
+	"""
 	commit_hash: str = (
 		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=PIPE)
 		.stdout.decode()
