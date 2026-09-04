@@ -6,6 +6,10 @@ import subprocess
 from subprocess import PIPE
 from sys import exit
 
+if __name__ != "__main__":
+	print("NOT A MODULE! CALL SCRIPT DIRECTLY")
+	exit(1)
+
 # check if all needed programs are installed
 if not shutil.which("pacman"):
 	print(
