@@ -15,7 +15,7 @@ To run this script you will need the following tools: git, pacman, paccache, mak
 
 ## About
 
-If you have an AUR directory like me, you can simply use this script to update all your AUR packages in an easy way. All this script does is to check all direct subdirs for an `PKGBUILD` file. In every direct subdir where that file could be found updates will be pulled through `git`, after that the packages which need to be rebuilt are built using `makepkg`. After that all the packages get installed through `sudo pacman -U`.
+If you have an AUR directory like me, you can simply use this script to update all your AUR packages in an easy way. All this script does is to check all direct subdirs for an `PKGBUILD` file. In every direct subdir where that file could be found updates will be pulled through `git`, after that the packages which need to be rebuilt are built using `makepkg`, if there are old tarballs, that are not needed anymore, they will get deleted. After that all the packages get installed through `sudo pacman -U`.
 
 ## Installation
 

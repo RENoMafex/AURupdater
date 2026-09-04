@@ -113,18 +113,23 @@ for pkg in packages:
 	num_uptodate += not pullresult
 bprint(f"Pulled {num_pulled} packages, {num_uptodate} were already up-to-date! building packages!", GREEN)
 
-
 # build packages
-packages = {pkg for pkg in packages if build(pkg)}
+built_packages: set[str] = {pkg for pkg in packages if build(pkg)}
+bprint(f"Built {len(built_packages)} packages! Cleaning up!", GREEN)
+
+# clean up
+for pkg in packages:
+	_ = subprocess.run(["paccache", "-c", ".", "-rvk1"], cwd=pkg, check=False)
+bprint("Cleaning done!", GREEN)
 
 # exit if nothing to do from here
-if len(packages) == 0:
+if len(built_packages) == 0:
 	bprint("No Packages to install, exiting!", RED)
 	exit(0)
 
 # getting tarball locations
 installables: list[str] = []
-for pkg in packages:
+for pkg in built_packages:
 	installables.extend(
 		subprocess.run(["makepkg", "--packagelist"], cwd=pkg, check=False, stdout=PIPE)
 		.stdout.decode()
