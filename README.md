@@ -11,7 +11,7 @@ Updates all your AUR packages, removes old tarballs and installs everything. Jus
 ## Prerequisites
 
 This script runs only under Linux distros, which use `pacman` (like Arch, CachyOS, EndeavourOS, Manjaro or SteamOS)
-To run this script you will need the following tools: git, pacman, paccache, makepkg and python, you can simply install them by `sudo pacman -S pacman python git pacman-contrib`
+To run this script you will need the following tools: git, pacman, paccache, makepkg and python, as long as pacman and python are installed, the script will install all other needed tools for you. If python is not installed, call `sudo pacman -S python`
 
 ## About
 
