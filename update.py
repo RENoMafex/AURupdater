@@ -1,9 +1,27 @@
 #!/usr/bin/env python3
 
 import os
+import shutil
 import subprocess
 from subprocess import PIPE
 from sys import exit
+
+# check if all needed programs are installed
+if not shutil.which("pacman"):
+	print(
+		'You haven\'t got "pacman" installed. Chances that this script will not work at all on your system are very high!\n'
+		+ 'Please make sure you have "pacman" installed!'
+	)
+	exit(1)
+pacman_install: list[str] = []
+if not shutil.which("git"):
+	pacman_install.append("git")
+if not shutil.which("paccache"):
+	pacman_install.append("pacman-contrib")
+if len(pacman_install):
+	print(f"Need to install following package(s): {' '.join(pacman_install)}")
+	_ = subprocess.run(["sudo", "pacman", "-S", *pacman_install], check=True)
+
 
 RESET: str = "\033[0m"
 BOLD: str = "\033[1m"
@@ -32,8 +50,6 @@ def bprint(value: str = "", color: str = "") -> None:
 
 
 # dirty little helper functions
-
-
 def build(pkg: str) -> bool:
 	"""
 	Invokes "makepkg" to build the Package!
