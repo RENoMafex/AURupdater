@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import os
 import shutil
 import subprocess
@@ -9,6 +10,14 @@ from sys import exit
 if __name__ != "__main__":
 	print("NOT A MODULE! CALL SCRIPT DIRECTLY")
 	exit(1)
+
+parser = argparse.ArgumentParser(
+	description="Updates AUR packages in all subdirectories."
+)
+parser.add_argument("-f", "--rebuild", help="Force rebuilding of all packages", action="store_true")
+parser.add_argument("-r", "--reinstall", help="Force reinstallation of all found packages, even if not fresh rebuilt", action="store_true")
+parser.add_argument("-d", "--dirty", help="Don't clean up old packages", action="store_true")
+args = parser.parse_args()
 
 # check if all needed programs are installed
 if not shutil.which("pacman"):
@@ -59,6 +68,11 @@ def build(pkg: str) -> bool:
 	cprint(CYAN + "Building " + GREEN + pkg)
 	return subprocess.run("makepkg", cwd=pkg, check=False).returncode == 0
 
+def unconditional_build(pkg: str) -> bool:
+	cprint(CYAN + "Building " + GREEN + pkg)
+	return subprocess.run(["makepkg", "-f"], cwd=pkg, check=False).returncode == 0
+
+
 
 def pull(pkg: str) -> bool:
 	# git-pull a repo. Returns True if there were changes.
@@ -69,13 +83,13 @@ def pull(pkg: str) -> bool:
 		.pop()
 	)
 	_ = subprocess.run(["git", "pull"], cwd=pkg, check=False)
-	return (
-		commit_hash
-		!= subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=PIPE)
+	commit_hash_new: str = (
+		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=PIPE)
 		.stdout.decode()
 		.splitlines()
 		.pop()
 	)
+	return commit_hash != commit_hash_new
 
 
 # make list of subdirs
@@ -99,16 +113,26 @@ for pkg in packages:
 	pullresult: bool = pull(pkg)
 	num_pulled += pullresult
 	num_uptodate += not pullresult
-bprint(f"Pulled {num_pulled} packages, {num_uptodate} were already up-to-date! building packages!", GREEN)
+bprint(f"Pulled {num_pulled} packages, {num_uptodate} were already up-to-date! Building packages!", GREEN)
 
 # build packages
-built_packages: set[str] = {pkg for pkg in packages if build(pkg)}
-bprint(f"Built {len(built_packages)} packages! Cleaning up!", GREEN)
+built_packages: set[str] = set()
+if args.rebuild:
+	built_packages = {pkg for pkg in packages if unconditional_build(pkg)}
+else:
+	if args.reinstall:
+		for pkg in packages:
+			build(pkg)
+			built_packages = set(packages)
+	else:
+		built_packages = {pkg for pkg in packages if build(pkg)}
+bprint(f"Built {len(built_packages)} packages!", GREEN)
 
 # clean up
-for pkg in packages:
-	_ = subprocess.run(["paccache", "-c", ".", "-rvk1"], cwd=pkg, check=False)
-bprint("Cleaning done!", GREEN)
+if not args.dirty:
+	for pkg in packages:
+		_ = subprocess.run(["paccache", "-c", ".", "-rvk1"], cwd=pkg, check=False)
+	bprint("Cleaning done!", GREEN)
 
 # exit if nothing to do from here
 if len(built_packages) == 0:
