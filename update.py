@@ -4,14 +4,17 @@
 # BEGIN OF SETTINGS FOR THIS SCRIPT #
 #####################################
 
+# Also update non-AUR packages in pacman? (Can be flipped with "-p / --pacman" flags).
 ALWAYS_UPGRADE_PACMAN_PACKAGES: bool = False
+
+# Tool to use for admin access (some people prefer other tools like doas or vsys)
+ADMIN_TOOL: str = "sudo"
 
 ###################################
 # END OF SETTINGS FOR THIS SCRIPT #
 ###################################
 
 import argparse, os, shutil, subprocess  # noqa: I001
-from operator import xor
 from subprocess import PIPE
 from sys import exit
 
@@ -99,7 +102,7 @@ if not shutil.which("paccache"):
 	pacman_install.append("pacman-contrib")
 if len(pacman_install):
 	print(f"Need to install following package(s): {' '.join(pacman_install)}")
-	_ = subprocess.run(["sudo", "pacman", "-S", *pacman_install], check=True)
+	_ = subprocess.run([ADMIN_TOOL, "pacman", "-S", *pacman_install], check=True)
 
 ###################
 # BEGIN OF SCRIPT #
@@ -166,13 +169,13 @@ for pkg in built_packages:
 installables = [pkg for pkg in installables if os.path.exists(pkg)]
 
 # install packages from existing tarballs
-if not subprocess.run(["sudo", "pacman", "-U", *installables], check=False).returncode:
+if not subprocess.run([ADMIN_TOOL, "pacman", "-U", *installables], check=False).returncode:
 	bprint(f"Installed {len(installables)} packages!", GREEN)
 else:
 	bprint("An Error occured. Check output for Infos.", RED)
 
 if ALWAYS_UPGRADE_PACMAN_PACKAGES != args.pacman: # != used as xor basically
 	bprint("AUR upgrades finished, upgrading pacman packages now!", GREEN)
-	_ = subprocess.run(["sudo", "pacman", "-Syu"], check=False)
+	_ = subprocess.run([ADMIN_TOOL, "pacman", "-Syu"], check=False)
 
 exit(0)
