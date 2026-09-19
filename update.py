@@ -15,7 +15,6 @@ ADMIN_TOOL: str = "sudo"
 ###################################
 
 import argparse, os, shutil, subprocess  # noqa: I001
-from subprocess import PIPE
 from sys import exit
 
 if __name__ != "__main__":
@@ -35,12 +34,34 @@ MAGENTA: str = "\033[35m"
 CYAN: str = "\033[36m"
 WHITE: str = "\033[37m"
 
+parser = argparse.ArgumentParser(
+	description="Updates AUR packages in all subdirectories.",
+)
+options = parser.add_argument_group("update options")
+options.add_argument("-f", "--rebuild", help="Force rebuilding of all packages", action="store_true")
+options.add_argument("-r", "--reinstall", help="Force reinstallation of all found packages, even if not fresh rebuilt", action="store_true")
+options.add_argument("-d", "--dirty", help="Don't clean up old packages", action="store_true")
+options.add_argument("-p", "--pacman", help=f"{f"{BOLD+UNDERLINE}Don't{RESET}" if ALWAYS_UPGRADE_PACMAN_PACKAGES else "Also"} upgrade all out-of-date pacman packages", action="store_true")
+output = parser.add_argument_group("output options")
+output.add_argument("-q", "--quiet", help="Suppress output of tools (progress output still works)", action="store_true")
+output.add_argument("-s", "--silent", help="Suppress all output (even stderr)", action="store_true")
+args = parser.parse_args()
+
+# redefine print to mute everything
+if args.silent:
+	def print(*args) -> None:
+		pass
+	args.quiet = True
+
+if args.quiet:
+	stdout: int | None = subprocess.PIPE
+else:
+	stdout = None
 
 # print colorized
 def cprint(value: str = "", color: str = "") -> None:
 	prefix: str = BOLD + color
 	print(f"{prefix}{value}{RESET}")
-
 
 # print a block
 def bprint(value: str = "", color: str = "") -> None:
@@ -48,45 +69,32 @@ def bprint(value: str = "", color: str = "") -> None:
 	cprint(value, color)
 	cprint(len(value) * "-", color)
 
-
 # dirty little helper functions
 def build(pkg: str) -> bool:
 	# Builds package. Returns True if makepkg didnt have any errors and build the package successfully.
 	cprint(CYAN + "Building " + GREEN + pkg)
-	return subprocess.run("makepkg", cwd=pkg, check=False).returncode == 0
+	return subprocess.run("makepkg", cwd=pkg, check=False, stdout=stdout, stderr=stdout).returncode == 0
 
 def unconditional_build(pkg: str) -> bool:
 	cprint(CYAN + "Building " + GREEN + pkg)
-	return subprocess.run(["makepkg", "-f"], cwd=pkg, check=False).returncode == 0
-
-
+	return subprocess.run(["makepkg", "-f"], cwd=pkg, check=False, stdout=stdout, stderr=stdout).returncode == 0
 
 def pull(pkg: str) -> bool:
 	# git-pull a repo. Returns True if there were changes.
 	commit_hash: str = (
-		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=PIPE)
+		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=subprocess.PIPE)
 		.stdout.decode()
 		.splitlines()
 		.pop()
 	)
-	_ = subprocess.run(["git", "pull"], cwd=pkg, check=False)
+	_ = subprocess.run(["git", "pull"], cwd=pkg, check=False, stdout=stdout, stderr=stdout)
 	commit_hash_new: str = (
-		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=PIPE)
+		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=subprocess.PIPE)
 		.stdout.decode()
 		.splitlines()
 		.pop()
 	)
 	return commit_hash != commit_hash_new
-
-parser = argparse.ArgumentParser(
-	description="Updates AUR packages in all subdirectories.",
-)
-
-parser.add_argument("-f", "--rebuild", help="Force rebuilding of all packages", action="store_true")
-parser.add_argument("-r", "--reinstall", help="Force reinstallation of all found packages, even if not fresh rebuilt", action="store_true")
-parser.add_argument("-d", "--dirty", help="Don't clean up old packages", action="store_true")
-parser.add_argument("-p", "--pacman", help=f"{f"{BOLD+UNDERLINE}Don't{RESET}" if ALWAYS_UPGRADE_PACMAN_PACKAGES else "Also"} upgrade all out-of-date pacman packages", action="store_true")
-args = parser.parse_args()
 
 # check if all needed programs are installed
 if not shutil.which("pacman"):
@@ -102,7 +110,7 @@ if not shutil.which("paccache"):
 	pacman_install.append("pacman-contrib")
 if len(pacman_install):
 	print(f"Need to install following package(s): {' '.join(pacman_install)}")
-	_ = subprocess.run([ADMIN_TOOL, "pacman", "-S", *pacman_install], check=True)
+	_ = subprocess.run([ADMIN_TOOL, "pacman", "-S", *pacman_install], check=True, stdout=stdout, stderr=stdout)
 
 ###################
 # BEGIN OF SCRIPT #
@@ -147,7 +155,7 @@ bprint(f"Built {len(built_packages)} packages!", GREEN)
 # clean up
 if not args.dirty:
 	for pkg in packages:
-		_ = subprocess.run(["paccache", "-c", ".", "-rvk1"], cwd=pkg, check=False)
+		_ = subprocess.run(["paccache", "-c", ".", "-rvk1"], cwd=pkg, check=False, stdout=stdout, stderr=stdout)
 	bprint("Cleaning done!", GREEN)
 
 # exit if nothing to do from here
@@ -159,7 +167,7 @@ if len(built_packages) == 0:
 installables: list[str] = []
 for pkg in built_packages:
 	installables.extend(
-		subprocess.run(["makepkg", "--packagelist"], cwd=pkg, check=False, stdout=PIPE)
+		subprocess.run(["makepkg", "--packagelist"], cwd=pkg, check=False, stdout=subprocess.PIPE)
 		.stdout.decode()
 		.strip()
 		.splitlines()
@@ -169,13 +177,13 @@ for pkg in built_packages:
 installables = [pkg for pkg in installables if os.path.exists(pkg)]
 
 # install packages from existing tarballs
-if not subprocess.run([ADMIN_TOOL, "pacman", "-U", *installables], check=False).returncode:
+if not subprocess.run([ADMIN_TOOL, "pacman", "-U", *installables], check=False, stdout=stdout, stderr=stdout).returncode:
 	bprint(f"Installed {len(installables)} packages!", GREEN)
 else:
 	bprint("An Error occured. Check output for Infos.", RED)
 
 if ALWAYS_UPGRADE_PACMAN_PACKAGES != args.pacman: # != used as xor basically
 	bprint("AUR upgrades finished, upgrading pacman packages now!", GREEN)
-	_ = subprocess.run([ADMIN_TOOL, "pacman", "-Syu"], check=False)
+	_ = subprocess.run([ADMIN_TOOL, "pacman", "-Syu"], check=False, stdout=stdout, stderr=stdout)
 
 exit(0)
