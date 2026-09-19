@@ -56,6 +56,30 @@ user@machine:~/AUR$ ./update.py
 
 You can run the script by invoking `./update.py` inside the AUR directory. It would update `package1`, `package2` and `package3` but not `NotAPackage`, because it has no `PKGBUILD` inside it.
 
+### Launch options and settings
+#### Options
+-h, --help      Show help message and exit<br>
+-f, --rebuild   Force rebuilding of all packages<br>
+-r, --reinstall Force reinstallation of all found packages, even if not fresh rebuilt<br>
+-d, --dirty     Don't clean up old packages<br>
+-p, --pacman    Also upgrade all out-of-date pacman packages
+
+> [!NOTE]
+> the -p / --pacman flags
+
+#### Settings
+At the top of the script you can change the standard behaviour of this script regarding regular pacman updates.
+##### Don't upgrade non-AUR packages (standard behaviour)
+```python
+ALWAYS_UPGRADE_PACMAN_PACKAGES: bool = False
+```
+##### Also upgrade non-AUR packages
+```python
+ALWAYS_UPGRADE_PACMAN_PACKAGES: bool = True
+```
+> [!NOTE]
+> the -p / --pacman flags flip the behaviour of the `ALWAYS_UPGRADE_PACMAN_PACKAGES` constant. If you change the constant the help message gets updated accordingly automatically!
+
 ## Acknowledgments
 
 Special thanks to Jan, who would rather like to stay anonymous, for proofreading this script since i have no idea how to code in python.
