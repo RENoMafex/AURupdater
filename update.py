@@ -10,10 +10,8 @@ ALWAYS_UPGRADE_PACMAN_PACKAGES: bool = False
 # END OF SETTINGS FOR THIS SCRIPT #
 ###################################
 
-import argparse
-import os
-import shutil
-import subprocess
+import argparse, os, shutil, subprocess  # noqa: I001
+from operator import xor
 from subprocess import PIPE
 from sys import exit
 
@@ -21,34 +19,9 @@ if __name__ != "__main__":
 	print("NOT A MODULE! CALL SCRIPT DIRECTLY")
 	exit(1)
 
-parser = argparse.ArgumentParser(
-	description="Updates AUR packages in all subdirectories."
-)
-parser.add_argument("-f", "--rebuild", help="Force rebuilding of all packages", action="store_true")
-parser.add_argument("-r", "--reinstall", help="Force reinstallation of all found packages, even if not fresh rebuilt", action="store_true")
-parser.add_argument("-d", "--dirty", help="Don't clean up old packages", action="store_true")
-parser.add_argument("-p", "--pacman", help="Also upgrade all out-of-date pacman packages", action="store_true")
-args = parser.parse_args()
-
-# check if all needed programs are installed
-if not shutil.which("pacman"):
-	print(
-		'You haven\'t got "pacman" installed. Chances that this script will not work at all on your system are very high!\n'
-		+ 'Please make sure you have "pacman" installed!'
-	)
-	exit(1)
-pacman_install: list[str] = []
-if not shutil.which("git"):
-	pacman_install.append("git")
-if not shutil.which("paccache"):
-	pacman_install.append("pacman-contrib")
-if len(pacman_install):
-	print(f"Need to install following package(s): {' '.join(pacman_install)}")
-	_ = subprocess.run(["sudo", "pacman", "-S", *pacman_install], check=True)
-
-
 RESET: str = "\033[0m"
 BOLD: str = "\033[1m"
+UNDERLINE: str = "\033[4m"
 
 BLACK: str = "\033[30m"
 RED: str = "\033[31m"
@@ -102,6 +75,35 @@ def pull(pkg: str) -> bool:
 	)
 	return commit_hash != commit_hash_new
 
+parser = argparse.ArgumentParser(
+	description="Updates AUR packages in all subdirectories.",
+)
+
+parser.add_argument("-f", "--rebuild", help="Force rebuilding of all packages", action="store_true")
+parser.add_argument("-r", "--reinstall", help="Force reinstallation of all found packages, even if not fresh rebuilt", action="store_true")
+parser.add_argument("-d", "--dirty", help="Don't clean up old packages", action="store_true")
+parser.add_argument("-p", "--pacman", help=f"{f"{BOLD+UNDERLINE}Don't{RESET}" if ALWAYS_UPGRADE_PACMAN_PACKAGES else "Also"} upgrade all out-of-date pacman packages", action="store_true")
+args = parser.parse_args()
+
+# check if all needed programs are installed
+if not shutil.which("pacman"):
+	print(
+		'You haven\'t got "pacman" installed. Chances that this script will not work at all on your system are very high!\n'
+		+ 'Please make sure you have "pacman" installed!'
+	)
+	exit(1)
+pacman_install: list[str] = []
+if not shutil.which("git"):
+	pacman_install.append("git")
+if not shutil.which("paccache"):
+	pacman_install.append("pacman-contrib")
+if len(pacman_install):
+	print(f"Need to install following package(s): {' '.join(pacman_install)}")
+	_ = subprocess.run(["sudo", "pacman", "-S", *pacman_install], check=True)
+
+###################
+# BEGIN OF SCRIPT #
+###################
 
 # make list of subdirs
 bprint("Listing packages!", GREEN)
@@ -169,7 +171,7 @@ if not subprocess.run(["sudo", "pacman", "-U", *installables], check=False).retu
 else:
 	bprint("An Error occured. Check output for Infos.", RED)
 
-if ALWAYS_UPGRADE_PACMAN_PACKAGES or args.pacman:
+if ALWAYS_UPGRADE_PACMAN_PACKAGES != args.pacman: # != used as xor basically
 	bprint("AUR upgrades finished, upgrading pacman packages now!", GREEN)
 	_ = subprocess.run(["sudo", "pacman", "-Syu"], check=False)
 
