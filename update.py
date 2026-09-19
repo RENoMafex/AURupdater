@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 
+#####################################
+# BEGIN OF SETTINGS FOR THIS SCRIPT #
+#####################################
+
+ALWAYS_UPGRADE_PACMAN_PACKAGES: bool = False
+
+###################################
+# END OF SETTINGS FOR THIS SCRIPT #
+###################################
+
 import argparse
 import os
 import shutil
@@ -17,6 +27,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument("-f", "--rebuild", help="Force rebuilding of all packages", action="store_true")
 parser.add_argument("-r", "--reinstall", help="Force reinstallation of all found packages, even if not fresh rebuilt", action="store_true")
 parser.add_argument("-d", "--dirty", help="Don't clean up old packages", action="store_true")
+parser.add_argument("-p", "--pacman", help="Also upgrade all out-of-date pacman packages", action="store_true")
 args = parser.parse_args()
 
 # check if all needed programs are installed
@@ -157,5 +168,9 @@ if not subprocess.run(["sudo", "pacman", "-U", *installables], check=False).retu
 	bprint(f"Installed {len(installables)} packages!", GREEN)
 else:
 	bprint("An Error occured. Check output for Infos.", RED)
+
+if ALWAYS_UPGRADE_PACMAN_PACKAGES or args.pacman:
+	bprint("AUR upgrades finished, upgrading pacman packages now!", GREEN)
+	_ = subprocess.run(["sudo", "pacman", "-Syu"], check=False)
 
 exit(0)
