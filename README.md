@@ -58,7 +58,7 @@ You can run the script by invoking `./update.py` inside the AUR directory. It wo
 
 ## Launch options and settings
 ### Options
-```bash
+```
 -h, --help      Show help message and exit
 -f, --rebuild   Force rebuilding of all packages
 -r, --reinstall Force reinstallation of all found packages, even if not fresh rebuilt
