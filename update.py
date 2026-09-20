@@ -36,17 +36,35 @@ WHITE: str = "\033[37m"
 
 parser = argparse.ArgumentParser(
 	description="Updates AUR packages in all subdirectories. Published under the MIT License. Copyright (c) 2026 Malte Schilling.",
+	add_help=False
 )
-parser.add_argument("-l", "--license", help="show license and exit", action="store_true")
-options = parser.add_argument_group("update options", "These options affect the update steps")
-options.add_argument("-f", "--rebuild", help="force rebuilding of all packages", action="store_true")
-options.add_argument("-r", "--reinstall", help="force reinstallation of all found packages, even if not fresh rebuilt", action="store_true")
-options.add_argument("-d", "--dirty", help="don't clean up old packages", action="store_true")
-options.add_argument("-p", "--pacman", help=f"{f"{BOLD+UNDERLINE}don't{RESET}" if ALWAYS_UPGRADE_PACMAN_PACKAGES else "also"} upgrade all out-of-date pacman packages", action="store_true")
-output = parser.add_argument_group("output options", "These options affect stdout AND stderr")
-output.add_argument("-q", "--quiet", help="suppress output of tools (progress output still works)", action="store_true")
-output.add_argument("-s", "--silent", help="suppress ALL output", action="store_true")
+informative = parser.add_argument_group("Informative options", "These options show informations about this script")
+informative.add_argument("-h", "--help", help="Show this help message and exit", action="store_true")
+informative.add_argument("-l", "--license", help="Show license and exit", action="store_true")
+informative.add_argument("--repo", help="Show link to source and exit", action="store_true")
+options = parser.add_argument_group("Update options", "These options affect the update steps")
+options.add_argument("-f", "--rebuild", help="Force rebuilding of all packages", action="store_true")
+options.add_argument("-r", "--reinstall", help="Force reinstallation of all found packages, even if not fresh rebuilt", action="store_true")
+options.add_argument("-d", "--dirty", help="Don't clean up old packages", action="store_true")
+options.add_argument("-p", "--pacman", help=f"{f"{BOLD+UNDERLINE}Don't{RESET}" if ALWAYS_UPGRADE_PACMAN_PACKAGES else "Also"} upgrade all out-of-date pacman packages", action="store_true")
+output = parser.add_argument_group("Output options", "These options affect stdout AND stderr")
+output.add_argument("-q", "--quiet", help="Suppress output of tools (progress output still works)", action="store_true")
+output.add_argument("-s", "--silent", help="Suppress ALL output", action="store_true")
 args = parser.parse_args()
+
+if args.help:
+	parser.print_help()
+	if not args.repo and not args.license:
+		exit(0)
+	else:
+		print()
+
+if args.repo:
+	print(UNDERLINE + "https://github.com/RENoMafex/AURupdater" + RESET)
+	if not args.license:
+		exit(0)
+	else:
+		print()
 
 if args.license:
 	print("MIT License\n\nCopyright (c) 2026 Malte Schilling\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.")
@@ -54,7 +72,7 @@ if args.license:
 
 # redefine print to mute everything
 if args.silent:
-	def print(*args) -> None:
+	def print(*_a, **_b) -> None:
 		pass
 	args.quiet = True
 
