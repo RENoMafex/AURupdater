@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportAny=false
 
 #####################################
 # BEGIN OF SETTINGS FOR THIS SCRIPT #
@@ -39,18 +40,26 @@ parser = argparse.ArgumentParser(
 	add_help=False
 )
 informative = parser.add_argument_group("Informative options", "These options show informations about this script")
-informative.add_argument("-h", "--help", help="Show this help message and exit", action="store_true")
-informative.add_argument("-l", "--license", help="Show license and exit", action="store_true")
-informative.add_argument("--repo", help="Show link to source and exit", action="store_true")
+_ = informative.add_argument("-h", "--help", help="Show this help message and exit", action="store_true")
+_ = informative.add_argument("-l", "--license", help="Show license and exit", action="store_true")
+_ = informative.add_argument("--repo", help="Show link to source and exit", action="store_true")
 options = parser.add_argument_group("Update options", "These options affect the update steps")
-options.add_argument("-f", "--rebuild", help="Force rebuilding of all packages", action="store_true")
-options.add_argument("-r", "--reinstall", help="Force reinstallation of all found packages, even if not fresh rebuilt", action="store_true")
-options.add_argument("-d", "--dirty", help="Don't clean up old packages", action="store_true")
-options.add_argument("-p", "--pacman", help=f"{f"{BOLD+UNDERLINE}Don't{RESET}" if ALWAYS_UPGRADE_PACMAN_PACKAGES else "Also"} upgrade all out-of-date pacman packages", action="store_true")
+_ = options.add_argument("-f", "--rebuild", help="Force rebuilding of all packages", action="store_true")
+_ = options.add_argument("-r", "--reinstall", help="Force reinstallation of all found packages, even if not fresh rebuilt", action="store_true")
+_ = options.add_argument("-d", "--dirty", help="Don't clean up old packages", action="store_true")
+_ = options.add_argument("-p", "--pacman", help=f"{f"{BOLD+UNDERLINE}Don't{RESET}" if ALWAYS_UPGRADE_PACMAN_PACKAGES else "Also"} upgrade all out-of-date pacman packages", action="store_true")
+_ = options.add_argument("--admintool", help=f"Choose another privilege tool (like \"sudo\" or \"doas\"), the default is {ADMIN_TOOL}", metavar="TOOL")
 output = parser.add_argument_group("Output options", "These options affect stdout AND stderr")
-output.add_argument("-q", "--quiet", help="Suppress output of tools (progress output still works)", action="store_true")
-output.add_argument("-s", "--silent", help="Suppress ALL output", action="store_true")
+_ = output.add_argument("-q", "--quiet", help="Suppress output of tools (progress output still works)", action="store_true")
+_ = output.add_argument("-s", "--silent", help="Suppress ALL output", action="store_true")
 args = parser.parse_args()
+
+if args.admintool:
+	if not shutil.which(args.admintool):
+		print(f"{args.admintool} is not in your PATH.")
+		exit(1)
+	# redefinition if "--admintool" is set
+	ADMIN_TOOL = args.admintool  # pyright: ignore[reportConstantRedefinition]
 
 if args.help:
 	parser.print_help()
@@ -72,7 +81,7 @@ if args.license:
 
 # redefine print to mute everything
 if args.silent:
-	def print(*_a, **_b) -> None:
+	def print(*_a: str, **_b:str) -> None:
 		pass
 	args.quiet = True
 
@@ -169,7 +178,7 @@ if args.rebuild:
 else:
 	if args.reinstall:
 		for pkg in packages:
-			build(pkg)
+			_ = build(pkg)
 			built_packages = set(packages)
 	else:
 		built_packages = {pkg for pkg in packages if build(pkg)}
