@@ -54,13 +54,6 @@ _ = output.add_argument("-q", "--quiet", help="Suppress output of tools (progres
 _ = output.add_argument("-s", "--silent", help="Suppress ALL output", action="store_true")
 args = parser.parse_args()
 
-if args.admintool:
-	if not shutil.which(args.admintool):
-		print(f"{args.admintool} is not in your PATH.")
-		exit(1)
-	# redefinition if "--admintool" is set
-	ADMIN_TOOL = args.admintool  # pyright: ignore[reportConstantRedefinition]
-
 if args.help:
 	parser.print_help()
 	if not args.repo and not args.license:
@@ -81,7 +74,7 @@ if args.license:
 
 # redefine print to mute everything
 if args.silent:
-	def print(*_a: str, **_b:str) -> None:
+	def print(*_a, **_b) -> None:  #pyright: ignore[reportUnknownParameterType, reportMissingParameterType]
 		pass
 	args.quiet = True
 
@@ -89,6 +82,14 @@ if args.quiet:
 	stdout: int | None = subprocess.PIPE
 else:
 	stdout = None
+
+if args.admintool:
+	if not shutil.which(args.admintool):
+		print(f"{args.admintool} is not in your PATH.")
+		exit(1)
+	# redefinition if "--admintool" is set
+	ADMIN_TOOL = args.admintool  # pyright: ignore[reportConstantRedefinition]
+	print(f"{BOLD}Note:{RESET} You used the \"--admintool\" option. If you want to change the tool permanently you should change the \"ADMIN_TOOL\" constant at the top of this script!\n")
 
 # print colorized
 def cprint(value: str = "", color: str = "") -> None:
