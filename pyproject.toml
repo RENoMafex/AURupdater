@@ -6,3 +6,6 @@ line-length = 120
 
 [tool.ruff.format]
 indent-style = "tab"
+
+[tool.basedpyright]
+typeCheckingMode = "recommended"
