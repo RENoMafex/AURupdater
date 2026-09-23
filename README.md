@@ -18,9 +18,18 @@ If you have an AUR directory like me, you can simply use this script to update a
 Just drop the `update.py` script into your top level AUR directory.
 
 # Usage
-Given the following example directory:
+<details>
+<summary>Given the following example directory: <ins>(click)</ins></summary>
 
 ```bash
+user@machine:~$ tree -L1 AUR
+AUR
+├── NotAPackage/
+├── package1/
+├── package2/
+├── package3/
+└── update.py
+
 user@machine:~$ tree -L2 AUR
 AUR
 ├── NotAPackage
@@ -48,6 +57,8 @@ user@machine:~$ cd AUR
 user@machine:~/AUR$ ./update.py
 # output of update.py here
 ```
+
+</details>
 
 You can run the script by invoking `./update.py` inside the AUR directory. It would update `package1`, `package2` and `package3` but not `NotAPackage`, because it has no `PKGBUILD` inside it.
 
