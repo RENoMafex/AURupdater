@@ -39,20 +39,27 @@ parser = argparse.ArgumentParser(
 	description="Updates AUR packages in all subdirectories. Published under the MIT License. Copyright (c) 2026 Malte Schilling.",
 	add_help=False
 )
+ST: str = "store_true"
 informative = parser.add_argument_group("Informative options", "These options show informations about this script")
-_ = informative.add_argument("-h", "--help", help="Show this help message and exit", action="store_true")
-_ = informative.add_argument("-l", "--license", help="Show license and exit", action="store_true")
-_ = informative.add_argument("--repo", help="Show link to source and exit", action="store_true")
+_ = informative.add_argument("-h", "--help", help="Show this help message and exit", action=ST)
+_ = informative.add_argument("-l", "--license", help="Show license and exit", action=ST)
+_ = informative.add_argument("--repo", help="Show link to source and exit", action=ST)
+_ = informative.add_argument("--help-check", help=argparse.SUPPRESS, action=ST)
 options = parser.add_argument_group("Update options", "These options affect the update steps")
-_ = options.add_argument("-f", "--rebuild", help="Force rebuilding of all packages", action="store_true")
-_ = options.add_argument("-r", "--reinstall", help="Force reinstallation of all found packages, even if not fresh rebuilt", action="store_true")
-_ = options.add_argument("-d", "--dirty", help="Don't clean up old packages", action="store_true")
-_ = options.add_argument("-p", "--pacman", help=f"{f"{BOLD+UNDERLINE}Don't{RESET}" if ALWAYS_UPGRADE_PACMAN_PACKAGES else "Also"} upgrade all out-of-date pacman packages", action="store_true")
+_ = options.add_argument("-c", "--check", help="Only check for updates. For further info use the \"--help-check\" flag", action=ST)
+_ = options.add_argument("-f", "--rebuild", help="Force rebuilding of all packages", action=ST)
+_ = options.add_argument("-r", "--reinstall", help="Force reinstallation of all found packages, even if not fresh rebuilt", action=ST)
+_ = options.add_argument("-d", "--dirty", help="Don't clean up old packages", action=ST)
+_ = options.add_argument("-p", "--pacman", help=f"{f"{BOLD+UNDERLINE}Don't{RESET}" if ALWAYS_UPGRADE_PACMAN_PACKAGES else "Also"} upgrade all out-of-date pacman packages", action=ST)
 _ = options.add_argument("--admintool", help=f"Choose another privilege tool (like \"sudo\" or \"doas\"), the default is {ADMIN_TOOL}", metavar="TOOL")
 output = parser.add_argument_group("Output options", "These options affect stdout AND stderr")
-_ = output.add_argument("-q", "--quiet", help="Suppress output of tools (progress output still works)", action="store_true")
-_ = output.add_argument("-s", "--silent", help="Suppress ALL output", action="store_true")
+_ = output.add_argument("-q", "--quiet", help="Suppress output of tools (progress output still works)", action=ST)
+_ = output.add_argument("-s", "--silent", help="Suppress ALL output", action=ST)
 args = parser.parse_args()
+
+if args.help_check:
+	print(f"The -c or --check flag checks the local repo against the first remote listed by \"git remote show\".\nTo easily use the output of the check in other scripts/programs run it together with the silent option,\nthis makes the number of packages that have changes in the remote repo the returncode of this script.\n\n{BOLD}examples:{RESET}\n{parser.prog} -cs\n{parser.prog} --silent --check")
+	exit(0)
 
 if args.help:
 	parser.print_help()
@@ -129,6 +136,23 @@ def pull(pkg: str) -> bool:
 	)
 	return commit_hash != commit_hash_new
 
+def check(pkg: str) -> bool:
+	# check remote for updates. Returns True if there were changes.
+	commit_hash: str = (
+		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=subprocess.PIPE)
+		.stdout.decode()
+		.splitlines()
+		.pop()
+	)
+	origin_name: str = subprocess.run(["git", "remote", "show"], cwd=pkg, check=False, stdout=subprocess.PIPE).stdout.decode().strip().splitlines()[0]
+	commit_hash_new: str = (
+		subprocess.run(["git", "rev-parse", origin_name], cwd=pkg, check=False, stdout=subprocess.PIPE)
+		.stdout.decode()
+		.splitlines()
+		.pop()
+	)
+	return commit_hash != commit_hash_new
+
 # check if all needed programs are installed
 if not shutil.which("pacman"):
 	print(
@@ -157,12 +181,23 @@ for file in os.listdir():
 		packages.add(file)
 
 if len(packages):
-	bprint(f"Found {len(packages)} Packages! Pulling changes!", GREEN)
+	bprint(f"Found {len(packages)} Packages! Looking for changes!", GREEN)
 else:
 	bprint("No Packages found, exiting!", RED)
 	exit(0)
 
 # pulliung changes
+if args.check:
+	changes: int = 0
+	for pkg in packages:
+		changes += check(pkg)
+	if args.silent:
+		exit(changes)
+	else:
+		bprint(f"Found {changes} changed package repos!", GREEN)
+		exit(0)
+
+
 num_pulled: int = 0
 num_uptodate: int = 0
 for pkg in packages:
