@@ -35,6 +35,62 @@ MAGENTA: str = "\033[35m"
 CYAN: str = "\033[36m"
 WHITE: str = "\033[37m"
 
+# function definitions
+# print colorized
+def cprint(value: str = "", color: str = "") -> None:
+	prefix: str = BOLD + color
+	print(f"{prefix}{value}{RESET}")
+
+# print a block
+def bprint(value: str = "", color: str = "") -> None:
+	cprint(len(value) * "-", color)
+	cprint(value, color)
+	cprint(len(value) * "-", color)
+
+# dirty little helper functions
+def build(pkg: str) -> bool:
+	# Builds package. Returns True if makepkg didnt have any errors and build the package successfully.
+	cprint(CYAN + "Building " + GREEN + pkg)
+	return subprocess.run("makepkg", cwd=pkg, check=False, stdout=stdout, stderr=stdout).returncode == 0
+
+def unconditional_build(pkg: str) -> bool:
+	cprint(CYAN + "Building " + GREEN + pkg)
+	return subprocess.run(["makepkg", "-f"], cwd=pkg, check=False, stdout=stdout, stderr=stdout).returncode == 0
+
+def pull(pkg: str) -> bool:
+	# git-pull a repo. Returns True if there were changes.
+	commit_hash: str = (
+		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=subprocess.PIPE)
+		.stdout.decode()
+		.splitlines()
+		.pop()
+	)
+	_ = subprocess.run(["git", "pull"], cwd=pkg, check=False, stdout=stdout, stderr=stdout)
+	commit_hash_new: str = (
+		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=subprocess.PIPE)
+		.stdout.decode()
+		.splitlines()
+		.pop()
+	)
+	return commit_hash != commit_hash_new
+
+def check(pkg: str) -> bool:
+	# check remote for updates. Returns True if there were changes.
+	commit_hash: str = (
+		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=subprocess.PIPE)
+		.stdout.decode()
+		.splitlines()
+		.pop()
+	)
+	origin_name: str = subprocess.run(["git", "remote", "show"], cwd=pkg, check=False, stdout=subprocess.PIPE).stdout.decode().strip().splitlines()[0]
+	commit_hash_new: str = (
+		subprocess.run(["git", "rev-parse", origin_name], cwd=pkg, check=False, stdout=subprocess.PIPE)
+		.stdout.decode()
+		.splitlines()
+		.pop()
+	)
+	return commit_hash != commit_hash_new
+
 parser = argparse.ArgumentParser(
 	description="Updates AUR packages in all subdirectories. Published under the MIT License. Copyright (c) 2026 Malte Schilling.",
 	add_help=False
@@ -98,60 +154,7 @@ if args.admintool:
 	ADMIN_TOOL = args.admintool  # pyright: ignore[reportConstantRedefinition]
 	print(f"{BOLD}Note:{RESET} You used the \"--admintool\" option. If you want to change the tool permanently you should change the \"ADMIN_TOOL\" constant at the top of this script!\n")
 
-# print colorized
-def cprint(value: str = "", color: str = "") -> None:
-	prefix: str = BOLD + color
-	print(f"{prefix}{value}{RESET}")
 
-# print a block
-def bprint(value: str = "", color: str = "") -> None:
-	cprint(len(value) * "-", color)
-	cprint(value, color)
-	cprint(len(value) * "-", color)
-
-# dirty little helper functions
-def build(pkg: str) -> bool:
-	# Builds package. Returns True if makepkg didnt have any errors and build the package successfully.
-	cprint(CYAN + "Building " + GREEN + pkg)
-	return subprocess.run("makepkg", cwd=pkg, check=False, stdout=stdout, stderr=stdout).returncode == 0
-
-def unconditional_build(pkg: str) -> bool:
-	cprint(CYAN + "Building " + GREEN + pkg)
-	return subprocess.run(["makepkg", "-f"], cwd=pkg, check=False, stdout=stdout, stderr=stdout).returncode == 0
-
-def pull(pkg: str) -> bool:
-	# git-pull a repo. Returns True if there were changes.
-	commit_hash: str = (
-		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=subprocess.PIPE)
-		.stdout.decode()
-		.splitlines()
-		.pop()
-	)
-	_ = subprocess.run(["git", "pull"], cwd=pkg, check=False, stdout=stdout, stderr=stdout)
-	commit_hash_new: str = (
-		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=subprocess.PIPE)
-		.stdout.decode()
-		.splitlines()
-		.pop()
-	)
-	return commit_hash != commit_hash_new
-
-def check(pkg: str) -> bool:
-	# check remote for updates. Returns True if there were changes.
-	commit_hash: str = (
-		subprocess.run(["git", "rev-parse", "HEAD"], cwd=pkg, check=False, stdout=subprocess.PIPE)
-		.stdout.decode()
-		.splitlines()
-		.pop()
-	)
-	origin_name: str = subprocess.run(["git", "remote", "show"], cwd=pkg, check=False, stdout=subprocess.PIPE).stdout.decode().strip().splitlines()[0]
-	commit_hash_new: str = (
-		subprocess.run(["git", "rev-parse", origin_name], cwd=pkg, check=False, stdout=subprocess.PIPE)
-		.stdout.decode()
-		.splitlines()
-		.pop()
-	)
-	return commit_hash != commit_hash_new
 
 # check if all needed programs are installed
 if not shutil.which("pacman"):
