@@ -15,7 +15,7 @@ ADMIN_TOOL: str = "sudo"
 # END OF SETTINGS FOR THIS SCRIPT #
 ###################################
 
-import argparse, os, shutil, subprocess  # noqa: I001
+import argparse, os, pathlib, shutil, subprocess, textwrap  # noqa: I001
 from sys import exit
 
 if __name__ != "__main__":
@@ -34,6 +34,63 @@ BLUE: str = "\033[34m"
 MAGENTA: str = "\033[35m"
 CYAN: str = "\033[36m"
 WHITE: str = "\033[37m"
+
+# Make scripts in own files and copy them here
+SCRIPTS: dict[str, str] = {
+	"BASH": textwrap.dedent(r"""	#!/usr/bin/env bash
+		_update.py_complete() {
+			local cur prev
+			COMPREPLY=()
+			cur="${COMP_WORDS[COMP_CWORD]}"
+			prev="${COMP_WORDS[COMP_CWORD-1]}"
+			case "$prev" in
+				--completion)
+					COMPREPLY=( $(compgen -W "bash zsh fish all" -- "$cur") )
+					return 0
+					;;
+				--admintool)
+					COMPREPLY=( $(compgen -c -- "$cur") )
+					return 0
+					;;
+			esac
+			COMPREPLY=( $(compgen -W "--help -h --license -l --repo --completion --check -c --rebuild -f --reinstall -r --dirty -d --pacman -p --admintool --quiet -q --silent -s" -- "$cur") )
+		}
+		complete -F _update.py_complete update.py update
+	"""),
+	"ZSH": textwrap.dedent(r"""	#compdef update.py update
+		_arguments \
+			'(-h --help)'{-h,--help}'[Show this help message and exit]' \
+			'(-l --license)'{-l,--license}'[Show license and exit]' \
+			'--repo[Show link to source and exit]' \
+			'--completion[Install tab-completion for your shell and exit]:shell:(bash zsh fish all)' \
+			'(-c --check)'{-c,--check}'[Only check for updates]' \
+			'(-f --rebuild)'{-f,--rebuild}'[Force rebuilding of all packages]' \
+			'(-r --reinstall)'{-r,--reinstall}'[Force reinstallation of all found packages, even if not fresh rebuilt]' \
+			'(-d --dirty)'{-d,--dirty}'[Do not clean up old packages]' \
+			'(-p --pacman)'{-p,--pacman}'[Also upgrade all out-of-date pacman packages]' \
+			'--admintool[Choose another privilege tool (like "sudo" or "doas"), default is sudo]:tool:_command_names -e' \
+			'(-q --quiet)'{-q,--quiet}'[Suppress output of tools (progress output still works)]' \
+			'(-s --silent)'{-s,--silent}'[Suppress ALL output]'
+	"""),
+	"FISH": textwrap.dedent(r"""	#!/usr/bin/env fish
+		complete -c update.py -f
+		complete -c update.py -l completion -d "Install tab-completion for your shell" -x -a "bash zsh fish all"
+		complete -c update.py -s h -l help -d "Show this help message and exit"
+		complete -c update.py -s l -l license -d "Show license and exit"
+		complete -c update.py -l repo -d "Show link to source and exit"
+		complete -c update.py -s c -l check -d "Only check for updates"
+		complete -c update.py -s f -l rebuild -d "Force rebuilding of all packages"
+		complete -c update.py -s r -l reinstall -d "Force reinstallation of all found packages, even if not fresh rebuilt"
+		complete -c update.py -s d -l dirty -d "Do not clean up old packages"
+		complete -c update.py -s p -l pacman -d "Also upgrade all out-of-date pacman packages"
+		complete -c update.py -l admintool -d "Choose another privilege tool, default is sudo" -x -a "(__fish_complete_command)"
+		complete -c update.py -s q -l quiet -d "Suppress output of tools (progress output still works)"
+		complete -c update.py -s s -l silent -d "Suppress ALL output"
+
+		complete -c update -f
+		complete -c update -w update.py
+	"""),
+}
 
 # function definitions
 # print colorized
@@ -101,6 +158,7 @@ _ = informative.add_argument("-h", "--help", help="Show this help message and ex
 _ = informative.add_argument("-l", "--license", help="Show license and exit", action=ST)
 _ = informative.add_argument("--repo", help="Show link to source and exit", action=ST)
 _ = informative.add_argument("--help-check", help=argparse.SUPPRESS, action=ST)
+_ = informative.add_argument("--completion", help="Install tab-completion for your shell and exit", choices=["bash", "zsh", "fish", "all"])
 options = parser.add_argument_group("Update options", "These options affect the update steps")
 _ = options.add_argument("-c", "--check", help="Only check for updates. For further info use the \"--help-check\" flag", action=ST)
 _ = options.add_argument("-f", "--rebuild", help="Force rebuilding of all packages", action=ST)
@@ -154,7 +212,23 @@ if args.admintool:
 	ADMIN_TOOL = args.admintool  # pyright: ignore[reportConstantRedefinition]
 	print(f"{BOLD}Note:{RESET} You used the \"--admintool\" option. If you want to change the tool permanently you should change the \"ADMIN_TOOL\" constant at the top of this script!\n")
 
-
+if args.completion:
+	if args.completion in ["bash", "all"]:
+		bash_dir: pathlib.Path = pathlib.Path(f"{os.getenv("HOME")}/.local/share/bash-completion/completions")
+		_ = subprocess.run(["mkdir", "-p", bash_dir], check=False)
+		_ = (bash_dir / "update.py").write_text(SCRIPTS["BASH"])
+		bprint("Installed autocompletion for bash", GREEN)
+	if args.completion in ["zsh", "all"]:
+		zsh_dir: pathlib.Path = pathlib.Path(f"{os.getenv("HOME")}/.zfunc")
+		_ = subprocess.run(["mkdir", "-p", zsh_dir], check=False)
+		_ = (zsh_dir / "_update.py").write_text(SCRIPTS["ZSH"])
+		bprint("Installed autocompletion for zsh", GREEN)
+	if args.completion in ["fish", "all"]:
+		fish_dir: pathlib.Path = pathlib.Path(f"{os.getenv("HOME")}/.config/fish/completions")
+		_ = subprocess.run(["mkdir", "-p", fish_dir], check=False)
+		_ = (fish_dir / "update.py.fish").write_text(SCRIPTS["FISH"])
+		bprint("Installed autocompletion for fish", GREEN)
+	exit(0)
 
 # check if all needed programs are installed
 if not shutil.which("pacman"):
