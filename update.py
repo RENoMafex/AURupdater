@@ -38,57 +38,57 @@ WHITE: str = "\033[37m"
 # Make scripts in own files and copy them here
 SCRIPTS: dict[str, str] = {
 	"BASH": textwrap.dedent(r"""	#!/usr/bin/env bash
-		_update.py_complete() {
-			local cur prev
-			COMPREPLY=()
-			cur="${COMP_WORDS[COMP_CWORD]}"
-			prev="${COMP_WORDS[COMP_CWORD-1]}"
-			case "$prev" in
-				--completion)
-					COMPREPLY=( $(compgen -W "bash zsh fish all" -- "$cur") )
-					return 0
-					;;
-				--admintool)
-					COMPREPLY=( $(compgen -c -- "$cur") )
-					return 0
-					;;
-			esac
-			COMPREPLY=( $(compgen -W "--help -h --license -l --repo --completion --check -c --rebuild -f --reinstall -r --dirty -d --pacman -p --admintool --quiet -q --silent -s" -- "$cur") )
-		}
-		complete -F _update.py_complete update.py update
+	_update.py_complete() {
+		local cur prev
+		COMPREPLY=()
+		cur="${COMP_WORDS[COMP_CWORD]}"
+		prev="${COMP_WORDS[COMP_CWORD-1]}"
+		case "$prev" in
+			--completion)
+				COMPREPLY=( $(compgen -W "bash zsh fish all" -- "$cur") )
+				return 0
+				;;
+			--admintool)
+				COMPREPLY=( $(compgen -c -- "$cur") )
+				return 0
+				;;
+		esac
+		COMPREPLY=( $(compgen -W "--help -h --license -l --repo --completion --check -c --rebuild -f --reinstall -r --dirty -d --pacman -p --admintool --quiet -q --silent -s" -- "$cur") )
+	}
+	complete -F _update.py_complete update.py update
 	"""),
 	"ZSH": textwrap.dedent(r"""	#compdef update.py update
 		_arguments \
-			'(-h --help)'{-h,--help}'[Show this help message and exit]' \
-			'(-l --license)'{-l,--license}'[Show license and exit]' \
-			'--repo[Show link to source and exit]' \
-			'--completion[Install tab-completion for your shell and exit]:shell:(bash zsh fish all)' \
-			'(-c --check)'{-c,--check}'[Only check for updates]' \
-			'(-f --rebuild)'{-f,--rebuild}'[Force rebuilding of all packages]' \
-			'(-r --reinstall)'{-r,--reinstall}'[Force reinstallation of all found packages, even if not fresh rebuilt]' \
-			'(-d --dirty)'{-d,--dirty}'[Do not clean up old packages]' \
-			'(-p --pacman)'{-p,--pacman}'[Also upgrade all out-of-date pacman packages]' \
-			'--admintool[Choose another privilege tool (like "sudo" or "doas"), default is sudo]:tool:_command_names -e' \
-			'(-q --quiet)'{-q,--quiet}'[Suppress output of tools (progress output still works)]' \
-			'(-s --silent)'{-s,--silent}'[Suppress ALL output]'
+		'(-h --help)'{-h,--help}'[Show this help message and exit]' \
+		'(-l --license)'{-l,--license}'[Show license and exit]' \
+		'--repo[Show link to source and exit]' \
+		'--completion[Install tab-completion for your shell and exit]:shell:(bash zsh fish all)' \
+		'(-c --check)'{-c,--check}'[Only check for updates]' \
+		'(-f --rebuild)'{-f,--rebuild}'[Force rebuilding of all packages]' \
+		'(-r --reinstall)'{-r,--reinstall}'[Force reinstallation of all found packages, even if not fresh rebuilt]' \
+		'(-d --dirty)'{-d,--dirty}'[Do not clean up old packages]' \
+		'(-p --pacman)'{-p,--pacman}'[Also upgrade all out-of-date pacman packages]' \
+		'--admintool[Choose another privilege tool (like "sudo" or "doas"), default is sudo]:tool:_command_names -e' \
+		'(-q --quiet)'{-q,--quiet}'[Suppress output of tools (progress output still works)]' \
+		'(-s --silent)'{-s,--silent}'[Suppress ALL output]'
 	"""),
 	"FISH": textwrap.dedent(r"""	#!/usr/bin/env fish
-		complete -c update.py -f
-		complete -c update.py -l completion -d "Install tab-completion for your shell" -x -a "bash zsh fish all"
-		complete -c update.py -s h -l help -d "Show this help message and exit"
-		complete -c update.py -s l -l license -d "Show license and exit"
-		complete -c update.py -l repo -d "Show link to source and exit"
-		complete -c update.py -s c -l check -d "Only check for updates"
-		complete -c update.py -s f -l rebuild -d "Force rebuilding of all packages"
-		complete -c update.py -s r -l reinstall -d "Force reinstallation of all found packages, even if not fresh rebuilt"
-		complete -c update.py -s d -l dirty -d "Do not clean up old packages"
-		complete -c update.py -s p -l pacman -d "Also upgrade all out-of-date pacman packages"
-		complete -c update.py -l admintool -d "Choose another privilege tool, default is sudo" -x -a "(__fish_complete_command)"
-		complete -c update.py -s q -l quiet -d "Suppress output of tools (progress output still works)"
-		complete -c update.py -s s -l silent -d "Suppress ALL output"
+	complete -c update.py -f
+	complete -c update.py -l completion -d "Install tab-completion for your shell" -x -a "bash zsh fish all"
+	complete -c update.py -s h -l help -d "Show this help message and exit"
+	complete -c update.py -s l -l license -d "Show license and exit"
+	complete -c update.py -l repo -d "Show link to source and exit"
+	complete -c update.py -s c -l check -d "Only check for updates"
+	complete -c update.py -s f -l rebuild -d "Force rebuilding of all packages"
+	complete -c update.py -s r -l reinstall -d "Force reinstallation of all found packages, even if not fresh rebuilt"
+	complete -c update.py -s d -l dirty -d "Do not clean up old packages"
+	complete -c update.py -s p -l pacman -d "Also upgrade all out-of-date pacman packages"
+	complete -c update.py -l admintool -d "Choose another privilege tool, default is sudo" -x -a "(__fish_complete_command)"
+	complete -c update.py -s q -l quiet -d "Suppress output of tools (progress output still works)"
+	complete -c update.py -s s -l silent -d "Suppress ALL output"
 
-		complete -c update -f
-		complete -c update -w update.py
+	complete -c update -f
+	complete -c update -w update.py
 	"""),
 }
 
