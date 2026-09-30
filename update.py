@@ -279,9 +279,10 @@ num_pulled: int = 0
 num_uptodate: int = 0
 for pkg in packages:
 	cprint(CYAN + "Pulling " + GREEN + pkg)
-	pullresult: bool = pull(pkg)
-	num_pulled += pullresult
-	num_uptodate += not pullresult
+	if pull(pkg):
+		num_pulled += 1
+	else:
+		num_uptodate += 1
 bprint(f"Pulled {num_pulled} packages, {num_uptodate} were already up-to-date! Building packages!", GREEN)
 
 # build packages
