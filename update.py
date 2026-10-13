@@ -307,7 +307,12 @@ if not args.dirty:
 # exit if nothing to do from here
 if len(built_packages) == 0:
 	bprint("No Packages to install, exiting!", RED)
-	exit(0)
+	if not args.pacman:
+		exit(0)
+	else:
+		bprint("AUR upgrades finished, upgrading pacman packages now!", GREEN)
+		_ = subprocess.run([ADMIN_TOOL, "pacman", "-Syu"], check=False, stdout=stdout, stderr=stdout)
+		exit(0)
 
 # getting tarball locations
 installables: list[str] = []
